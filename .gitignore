@@ -214,5 +214,19 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore downloaded dataset files
+*.tar.gz
+*.zip
+*.json
+
+# Ignore saved deep learning model weights
+*.pt
+*.pth
+*.h5
+checkpoints/
+
 # Streamlit
 .streamlit/secrets.toml
