@@ -11,7 +11,7 @@ from traditional_cv.data import build_manifest
 from traditional_cv.evaluation import evaluate
 from traditional_cv.features import HandcraftedFeatureExtractor, resize_with_padding
 from traditional_cv.models import fit_classifier
-from traditional_cv.robustness import degrade, run_robustness
+from traditional_cv.robustness import degrade, plot_degradation_examples, run_robustness
 
 
 def _dataset(root: Path, counts=(4, 2, 2), classes=6):
@@ -60,6 +60,14 @@ def test_padding_and_degradations_are_deterministic():
         assert degrade(image, kind, severity, 0).shape == image.shape
 
 
+def test_degradation_example_grid(tmp_path):
+    image = np.full((48, 64, 3), 128, dtype=np.uint8)
+    path = tmp_path / "example.jpg"
+    cv2.imwrite(str(path), cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
+    result = plot_degradation_examples(path, tmp_path)
+    assert result.exists() and result.stat().st_size > 0
+
+
 def test_sift_bovw_fit_and_transform(tmp_path):
     rng = np.random.default_rng(7)
     paths = []
@@ -77,6 +85,15 @@ def test_sift_bovw_fit_and_transform(tmp_path):
     features = extractor.transform(paths)
     assert features.shape == (8, 8)
     assert np.isfinite(features).all()
+
+    spatial = FeatureConfig(
+        names=("spatial_bovw",), image_size=96, bovw_words=8,
+        sift_max_per_image=30, sift_sample_limit=100,
+    )
+    spatial_extractor = HandcraftedFeatureExtractor(spatial).fit(paths)
+    spatial_features = spatial_extractor.transform(paths)
+    assert spatial_features.shape == (8, 40)
+    assert np.isfinite(spatial_features).all()
 
 
 def test_robustness_rejects_non_test_rows(tmp_path):

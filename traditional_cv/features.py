@@ -21,7 +21,7 @@ from .config import FeatureConfig
 
 
 ImageTransform = Callable[[np.ndarray, int], np.ndarray]
-VALID_FEATURES = {"hsv", "lbp", "hog", "bovw"}
+VALID_FEATURES = {"hsv", "spatial_hsv", "lbp", "hog", "bovw", "spatial_bovw"}
 
 
 def read_rgb(path: str | Path) -> np.ndarray:
@@ -72,7 +72,7 @@ class HandcraftedFeatureExtractor(BaseEstimator, TransformerMixin):
     def fit(self, paths: Iterable[str | Path], y=None):
         paths = list(paths)
         started = time.perf_counter()
-        if "bovw" in self.config.names:
+        if {"bovw", "spatial_bovw"} & set(self.config.names):
             rng = np.random.default_rng(self.config.seed)
             pool: list[np.ndarray] = []
             count = 0
@@ -111,6 +111,9 @@ class HandcraftedFeatureExtractor(BaseEstimator, TransformerMixin):
 
     def _hsv(self, image: np.ndarray) -> np.ndarray:
         hsv = cv2.cvtColor(resize_with_padding(image, self.config.image_size), cv2.COLOR_RGB2HSV)
+        return self._hsv_region(hsv)
+
+    def _hsv_region(self, hsv: np.ndarray) -> np.ndarray:
         histogram = cv2.calcHist(
             [hsv], [0, 1, 2], None, list(self.config.hsv_bins), [0, 180, 0, 256, 0, 256]
         ).ravel().astype(np.float32)
@@ -120,6 +123,12 @@ class HandcraftedFeatureExtractor(BaseEstimator, TransformerMixin):
         # Put moments on comparable fixed ranges before later standardisation.
         moments /= np.array([180, 256, 256, 180, 256, 256], dtype=np.float32)
         return np.concatenate([histogram, moments]).astype(np.float32)
+
+    def _spatial_hsv(self, image: np.ndarray) -> np.ndarray:
+        hsv = cv2.cvtColor(resize_with_padding(image, self.config.image_size), cv2.COLOR_RGB2HSV)
+        regions = [hsv]
+        regions.extend(cell for row in np.array_split(hsv, 2, axis=0) for cell in np.array_split(row, 2, axis=1))
+        return np.concatenate([self._hsv_region(region) for region in regions])
 
     def _lbp(self, image: np.ndarray) -> np.ndarray:
         gray = cv2.cvtColor(resize_with_padding(image, self.config.image_size), cv2.COLOR_RGB2GRAY)
@@ -157,6 +166,27 @@ class HandcraftedFeatureExtractor(BaseEstimator, TransformerMixin):
             vector /= vector.sum() + 1e-12
             vector = np.sqrt(vector)
         return vector
+
+    def _spatial_bovw(self, image: np.ndarray) -> np.ndarray:
+        if self.kmeans_ is None:
+            raise RuntimeError("Spatial BoVW extractor must be fitted on training data first")
+        resized = resize_with_padding(image, self.config.image_size)
+        gray = cv2.cvtColor(resized, cv2.COLOR_RGB2GRAY)
+        keypoints, descriptors = self._sift().detectAndCompute(gray, None)
+        output = np.zeros((5, self.config.bovw_words), dtype=np.float32)
+        if descriptors is None:
+            return output.ravel()
+        descriptors = descriptors[: self.config.sift_max_per_image].astype(np.float32)
+        keypoints = keypoints[: self.config.sift_max_per_image]
+        words = self.kmeans_.predict(descriptors)
+        size = self.config.image_size
+        for word, keypoint in zip(words, keypoints):
+            output[0, word] += 1
+            x, y = keypoint.pt
+            quadrant = 1 + min(1, int(y >= size / 2)) * 2 + min(1, int(x >= size / 2))
+            output[quadrant, word] += 1
+        output /= output.sum(axis=1, keepdims=True) + 1e-12
+        return np.sqrt(output).ravel()
 
     def _one(self, image: np.ndarray, name: str) -> np.ndarray:
         return getattr(self, f"_{name}")(image)

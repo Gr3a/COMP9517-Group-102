@@ -38,3 +38,10 @@ part of the time-bounded notebook workflow.
 The `test` command creates `TEST_EVALUATED.json` and refuses to run twice. Complete all
 validation-based decisions before using it. Use `--hash-files` with `audit` for the final
 byte-level leakage check. Run automated tests with `pytest -q`.
+
+### Enhanced fully traditional follow-up
+
+Open `notebooks/Enhanced_Traditional_Method.ipynb` for the validation-only enhanced
+experiment. It uses 224px spatial HSV/LBP/HOG, spatial-pyramid SIFT-BoVW-512, three
+hinge-loss SVM regularisation settings, and four regularised Random-Forest screens.
+Outputs are isolated under `artifacts/traditional_enhanced/`; the baseline is preserved.

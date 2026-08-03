@@ -12,6 +12,7 @@ import pandas as pd
 from PIL import Image
 
 from .evaluation import evaluate
+from .features import read_rgb
 
 
 DEGRADATION_LEVELS = {
@@ -93,3 +94,32 @@ def plot_robustness(results: pd.DataFrame, output_dir: str | Path) -> None:
         fig.savefig(output / f"robustness_{metric}.png", dpi=200)
         plt.close(fig)
 
+
+def plot_degradation_examples(
+    image_path: str | Path,
+    output_dir: str | Path,
+    degradation_config: dict[str, list[float]] | None = None,
+    *,
+    seed: int = 42,
+) -> Path:
+    """Create a report-ready grid of the exact test-time corruptions."""
+    output = Path(output_dir)
+    output.mkdir(parents=True, exist_ok=True)
+    config = degradation_config or DEGRADATION_LEVELS
+    image = read_rgb(image_path)
+    rows, columns = len(config), 5
+    fig, axes = plt.subplots(rows, columns, figsize=(15, 3.2 * rows), squeeze=False)
+    for row, (kind, levels) in enumerate(config.items()):
+        axes[row, 0].imshow(image)
+        axes[row, 0].set_title(f"{kind.replace('_', ' ').title()}\nClean")
+        axes[row, 0].axis("off")
+        for column, level in enumerate(levels, 1):
+            axes[row, column].imshow(degrade(image, kind, level, index=0, seed=seed))
+            axes[row, column].set_title(f"Severity: {level}")
+            axes[row, column].axis("off")
+    fig.suptitle("Held-out test image degradation examples", fontsize=16)
+    fig.tight_layout()
+    path = output / "degradation_examples.png"
+    fig.savefig(path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    return path
