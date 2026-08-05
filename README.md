@@ -45,3 +45,25 @@ Open `notebooks/Enhanced_Traditional_Method.ipynb` for the validation-only enhan
 experiment. It uses 224px spatial HSV/LBP/HOG, spatial-pyramid SIFT-BoVW-512, three
 hinge-loss SVM regularisation settings, and four regularised Random-Forest screens.
 Outputs are isolated under `artifacts/traditional_enhanced/`; the baseline is preserved.
+
+## Grad-CAM explainability (Advanced Topic 1, deep-learning only)
+
+`grad_cam/` provides a hand-implemented Grad-CAM / Grad-CAM++ (via forward/backward
+hooks, no external CAM library) that plugs into the trained CNNs from `Alex_Shim/`
+(ResNet18/50, ConvNeXt-Tiny, Swin-T). The guided workflow is
+`notebooks/Grad_CAM_Explainability.ipynb`.
+
+It answers the four required questions: correct-vs-incorrect maps, confusable
+same-genus pairs, organism-vs-background attention (Otsu-mask proxy, since iNat2021 has
+no GT masks), and concrete failure-case claims. It **reuses** each run's
+`*_predictions.csv` to pick examples, so nothing is re-inferred.
+
+```bash
+python -m pip install -r requirements-gradcam.txt
+pytest -q tests/test_gradcam.py        # smoke test, no weights/data needed
+```
+
+To produce figures, open the notebook and set `ARCH`, `WEIGHTS_PATH` (the saved
+`state_dict` .pth), `DATA_DIR` (`Team_Dataset/`), and `PRED_CSV`. Figures are written to
+`artifacts/grad_cam/` (git-ignored). Grad-CAM target layers: `layer4[-1]` (ResNet),
+`features[-1]` (ConvNeXt), `features[-1]` + reshape (Swin).
