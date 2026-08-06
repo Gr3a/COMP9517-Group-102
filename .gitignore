@@ -229,6 +229,7 @@ __marimo__/
 *.pth
 *.h5
 checkpoints/
+trad_outputs/
 
 # Streamlit
 .streamlit/secrets.toml
