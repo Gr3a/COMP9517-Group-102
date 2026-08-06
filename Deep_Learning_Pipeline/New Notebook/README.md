@@ -6,7 +6,7 @@ and figure used in the report.
 
 ## Two ways to run it
 
-** 1. Train a run from scratch (Local).** Set `TRAIN = True` and set `RUN_ID` to one of
+**1. Train a run from scratch (Local).** Set `TRAIN = True` and set `RUN_ID` to one of
 the seven keys of the model that you wish to train. It will then train, evaluate on the test set, and append its row to
 the results table. From-scratch runs take about 40–70 minutes while pretrained runs around 15–40.
 
