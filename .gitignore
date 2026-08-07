@@ -234,3 +234,6 @@ trad_outputs/
 # Streamlit
 .streamlit/secrets.toml
 .DS_Store
+
+.tmp_cv_presentation.EpgA6a
+presentation/
