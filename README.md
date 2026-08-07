@@ -7,9 +7,11 @@ Hello Group, I have made a basic setup for our workflow based on what the specif
 
 ## Traditional handcrafted-feature method
 
-The implementation is in `traditional_cv/` and the guided Colab workflow is
-`notebooks/Traditional_Method.ipynb`. Generated models, cached features, metrics,
-predictions, and figures go under `artifacts/` and must remain outside Git.
+The reusable implementation is in `traditional_cv/`. The executed primary workflow and
+results are in `Traditional & Advanced Methods/Traditional_Method_Submission.ipynb`.
+Generated models, cached features, metrics, predictions, and figures are written under
+`artifacts/traditional/`. The `artifacts/` directory is Git-ignored because it contains
+large reproducible outputs.
 
 ### Local setup
 
@@ -41,17 +43,43 @@ byte-level leakage check. Run automated tests with `pytest -q`.
 
 ### Enhanced fully traditional follow-up
 
-Open `notebooks/Enhanced_Traditional_Method.ipynb` for the validation-only enhanced
-experiment. It uses 224px spatial HSV/LBP/HOG, spatial-pyramid SIFT-BoVW-512, three
+Open `Traditional & Advanced Methods/Enhanced_Traditional_Method.ipynb` for the
+validation-only enhanced experiment. It uses 224px spatial HSV/LBP/HOG,
+spatial-pyramid SIFT-BoVW-512, three
 hinge-loss SVM regularisation settings, and four regularised Random-Forest screens.
 Outputs are isolated under `artifacts/traditional_enhanced/`; the baseline is preserved.
+
+## Robustness to image degradation (Advanced Topic 2)
+
+The traditional robustness experiment is provided in
+`Traditional & Advanced Methods/Traditional_Robustness.ipynb` and can also be run with:
+
+```bash
+python -m traditional_cv.cli robustness --data Team_Dataset
+```
+
+The experiment loads the already trained and frozen best model. Only the 5,000 held-out test images are degraded using four practical image
+corruptions at four severity levels:
+
+- Gaussian noise: standard deviation `0.02, 0.05, 0.10, 0.20`;
+- Gaussian blur: sigma `1, 2, 3, 5`;
+- motion blur: kernel size `3, 7, 11, 15`;
+- JPEG compression: quality `75, 50, 25, 10`.
+
+The clean test set is the severity-zero reference. Top-1 accuracy and macro-F1 are measured
+at every level and plotted against severity. This shows how quickly performance falls as
+image quality decreases while keeping the original train, validation, and test split intact.
+
 
 ## Grad-CAM explainability (Advanced Topic 1, deep-learning only)
 
 `grad_cam/` provides a hand-implemented Grad-CAM / Grad-CAM++ (via forward/backward
-hooks, no external CAM library) that plugs into the trained CNNs from `Alex_Shim/`
-(ResNet18/50, ConvNeXt-Tiny, Swin-T). The guided workflow is
-`notebooks/Grad_CAM_Explainability.ipynb`.
+hooks, no external CAM library) that plugs into the trained CNNs documented under
+`Deep_Learning_Pipeline/` (ResNet18/50, ConvNeXt-Tiny, and Swin-T). The guided Colab
+workflow is `Traditional & Advanced Methods/Grad_CAM_Explainability.ipynb`. The current
+consolidated deep-learning workflow is
+`Deep_Learning_Pipeline/New Notebook/Deep_Learning_Notebook.ipynb`; the original
+per-architecture notebooks are retained under `Deep_Learning_Pipeline/Old Notebooks/`.
 
 It answers the four required questions: correct-vs-incorrect maps, confusable
 same-genus pairs, organism-vs-background attention (Otsu-mask proxy, since iNat2021 has
